@@ -83,8 +83,13 @@ export const UpdateVandorProfile = async (
         existingVandor.email = email
         existingVandor.foodType = foodTypes
 
-        const UpdatedVandor = await existingVandor.save()
-        return res.json(UpdatedVandor)
+        try {
+          const UpdatedVandor = await existingVandor.save()
+          return res.json(UpdatedVandor)
+        } catch (error) {
+          return res.status(400).json({ message: error})
+
+        }
       }
   
       return res.status(200).json(existingVandor)
