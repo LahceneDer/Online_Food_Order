@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose"
 interface VandorDoc extends Document {
     name: string;
     ownerName: string;
-    foodType: [string];
+    foodType: string[];
     pincode: string;
     address: string;
     phone: string;
@@ -13,15 +13,15 @@ interface VandorDoc extends Document {
     serviceAvailable: boolean;
     coverImage: [string];
     rating: string;
-    // foods : string
+    foods : [string]
 }
 
 const VandorSchema = new Schema({
     name: { type: String, required: true},
     ownerName: { type: String, required: true},
-    foodType: [String],
+    foodType: { type: [String]},
     pincode: { type: String, required: true},
-    address: String,
+    address: { type: String},
     phone: { type: String, required: true},
     email: { type: String, required: true},
     password: { type: String, required: true},
@@ -29,10 +29,10 @@ const VandorSchema = new Schema({
     serviceAvailable: { type: Boolean},
     coverImage: { type: [String]},
     rating: { type: Number},
-    // foods: {
-    //     type: mongoose.SchemaTypes.ObjectId,
-    //     ref: 'food'
-    // }
+    foods: {
+        type: [mongoose.SchemaTypes.ObjectId],
+        ref: 'Food'
+    }
 },
 {
     toJSON: {
@@ -47,6 +47,6 @@ const VandorSchema = new Schema({
     timestamps: true
 })
 
-const Vandor = mongoose.model('Vandor', VandorSchema)
+const Vandor = mongoose.model<VandorDoc>('Vandor', VandorSchema)
 
 export { Vandor }

@@ -3,6 +3,8 @@ import { EditVandorInputs, VandorLoginInputs } from "../dto/vandor.dto";
 import { FindVandor } from "./AdminController";
 import { GenerateSignature, ValidatePassword } from "../utilities/PasswordUtility";
 import mongoose, { Schema } from "mongoose";
+import { CreateFoodInputs } from "../dto/Food.dto";
+import { Food } from "../models/Food";
 
 
 export const VandorLogin = async (
@@ -92,6 +94,39 @@ export const UpdateVandorProfile = async (
       
   };
 
+  export const UpdateVandorCoverImage = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+
+    try {
+      const { user } = req;
+  
+      if (!user) {
+        return res.status(403).json({ message: 'Not allowed' });
+      }
+  
+      const existingVandor = await FindVandor(user._id);
+  
+      if (!existingVandor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const files = req.files as [Express.Multer.File]      
+      const images = files.map((file: Express.Multer.File) => file.filename)
+  
+      existingVandor.coverImage.push(...images);
+      await existingVandor.save();
+  
+      return res.status(200).json(existingVandor);
+    } catch (error) {
+      // Handle any potential errors
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+
+
   export const UpdateVandorService = async (
     req: Request,
     res: Response,
@@ -116,3 +151,78 @@ export const UpdateVandorProfile = async (
     return res.status(404).json({ message: "Vandor not found" });
       
   };
+
+
+  export const AddFood = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    
+    try {
+      const { user } = req;
+  
+      if (!user) {
+        return res.status(403).json({ message: 'Not allowed' });
+      }
+  
+      const { category, description, foodType, name, price, readyTime } =
+        req.body as CreateFoodInputs;
+  
+      const existingVandor = await FindVandor(user._id);
+  
+      if (!existingVandor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const files = req.files as [Express.Multer.File]      
+      const images = files.map((file: Express.Multer.File) => file.filename)
+  
+      const createdFood = await Food.create({
+        vandorId: existingVandor._id,
+        name,
+        description,
+        category,
+        foodType,
+        images, 
+        readyTime,
+        price,
+        rating: 0,
+      });
+  
+      existingVandor.foods.push(createdFood._id);
+      await existingVandor.save();
+  
+      return res.json(createdFood);
+    } catch (error) {
+      // Handle any potential errors
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+
+
+  export const GetFoods = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+  
+    const { user } = req
+
+    if(!user) {
+      return res.status(404).json('User not authorized')
+    }
+
+      const existingVandor = await FindVandor(user._id)
+
+      if(!existingVandor){
+        return res.status(404).json('Vandor not found')
+      }
+
+      const foods = await Food.find({vandorId: existingVandor._id})
+  
+      return res.status(200).json(foods)
+  
+      
+  };
+
