@@ -59,9 +59,6 @@ export const GetFoodsIn30Min = async (
     try {
       const result = await Vandor.find({ pincode, serviceAvailable: false })
         .populate('foods')
-
-        console.log(result);
-        
   
       if (result.length > 0) {
         let foodResult: any = []
@@ -83,10 +80,48 @@ export const SearchFoods = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {};
+) => {
+  const pincode = req.params.pincode;
+
+  try {
+    const result = await Vandor.find({ pincode, serviceAvailable: false })
+      .populate('foods')
+
+    if (result.length > 0) {
+      let foodResult: any = []
+      result.map( item => foodResult.push(...item.foods))
+    return res.status(200).json(foodResult);
+    }
+    return res.status(400).json({ message: "Data not found" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: "failed", message: "something went wrong" });
+  }
+};
 
 export const GetRestaurantByID = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {};
+) => {
+
+  const id = req.params.id
+
+  try {
+    const vandor = await Vandor.findById(id)
+    if(!vandor) {
+      return res
+      .status(404)
+      .json({ status: "failed", message: "Not found" });
+    }
+
+    return res
+    .status(200)
+    .json({ status: "failed", data: vandor });
+  } catch (error) {
+    return res
+    .status(500)
+    .json({ status: "failed", message: "something went wrong", error });
+  }
+};

@@ -12,7 +12,7 @@ export interface VandorDoc extends Document {
     salt: string;
     serviceAvailable: boolean;
     coverImage: [string];
-    rating: string;
+    rating: number;
     foods : [string]
 }
 
