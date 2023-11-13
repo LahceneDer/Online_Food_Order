@@ -25,13 +25,19 @@ export const GenerateSignature = (payload: AuthPayload) => {
 }
 
 
-export const ValidateSignature = async (req: any) => {
-    const signature = req.get('Authorization')
+export const validateSignature = async (req: Request): Promise<boolean> => {
+  try {
+    const signature = req.cookies.token;
 
-    if(signature) {
-        const payload = await jwt.verify(signature.split(' ')[1], JWT_SECRET) as AuthPayload
-        req.user = payload
-        return true
+    if (signature) {
+      const payload = jwt.verify(signature, JWT_SECRET) as AuthPayload;
+      req.user = payload;
+      return true;
     }
-    return false
-}
+
+    return false;
+  } catch (error:any) {
+    console.error('Error verifying token:', error.message);
+    return false;
+  }
+};

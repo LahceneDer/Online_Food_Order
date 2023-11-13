@@ -23,7 +23,7 @@ const CustomerSchema = new Schema({
     email: { type: String, required: true},
     password: { type: String, required: true},
     salt: { type: String, required: true},
-    verified: { type: String, required: true},
+    verified: { type: Boolean, required: true},
     lat: { type: Number},
     lng: { type: Number},
     otp: { type: Number, required: true},

@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from "express";
 import { CreateCustomerInputs, EditCustomerProfileInputs, LoginCustomerInputs } from "../dto/Customer.dto";
 import { GeneratePassword, GenerateSalt, GenerateSignature, ValidatePassword } from "../utilities/PasswordUtility";
 import { Customer, CustomerDoc } from "../models/Customer";
-import { GenerateOtpAndExpiry, onRequestOTP } from "../utilities/NotificationUtility";
+import { GenerateOtpAndExpiry, onRequestOTP, onRequestOTPWithEmail } from "../utilities/NotificationUtility";
 
 
 
@@ -28,7 +28,7 @@ export const CustomerSignUp = async (req: Request, res: Response, next: NextFunc
   const salt = await GenerateSalt()
   const newPassword = await GeneratePassword(password, salt)
 
-  const { otp, expiry } = GenerateOtpAndExpiry()
+  const { otp, expiry } = GenerateOtpAndExpiry(new Date())
 
   // Create new customer
   const customer: CustomerDoc = await Customer.create({
@@ -49,11 +49,17 @@ export const CustomerSignUp = async (req: Request, res: Response, next: NextFunc
   if (customer) {
 
     //Send the OTP to customer
-    try {
-      const sent = await onRequestOTP(otp, phone)
-    } catch (error) {
-      return res.status(400).json({ message: "Sending OTP error" })
-    }
+      const SMSSent = await onRequestOTP(otp, phone)
+
+      if(SMSSent.status !== "sent") {
+          // Execute onRequestOTPWithEmail if onRequestOTP fails
+          const emailResponse = onRequestOTPWithEmail(
+            customer.email,
+            "OTP Request",
+            otp
+          );
+      }
+      
 
     //generate the signature/token
     const signature = GenerateSignature({
@@ -61,6 +67,8 @@ export const CustomerSignUp = async (req: Request, res: Response, next: NextFunc
       email: customer.email,
       verified: customer.verified
     })
+
+    res.cookie('token', `${signature}`);
 
     // send the result to client
     return res.status(201).json({ signature, verified: customer.verified, email: customer.email })
@@ -96,11 +104,14 @@ export const CustomerLogin = async (req: Request, res: Response, next: NextFunct
       verified: customer.verified
     })
 
+    res.cookie('token', `${signature}`);
+
     return res.status(201).json({
       signature,
       email: customer.email,
       verified: customer.verified
     })
+    
   } catch (error) {
     return res.status(400).json({ message: "Login error !!!" })
   }
@@ -112,14 +123,18 @@ export const CustomerVerify = async (req: Request, res: Response, next: NextFunc
 
   const { otp } = req.body
   const customer = req.user
+  
 
-  if (customer) {
+  if(!customer) {
+    return res.status(404).json({ message: "Not authorized" })
+  }
+
     try {
       const profile = await Customer.findById(customer._id)
       if (!profile) {
         return res.status(404).json({ message: "Customer not found" })
       }
-
+            
       if (profile.otp === parseInt(otp) && profile.otp_expiry >= new Date()) {
         profile.verified = true
 
@@ -132,13 +147,17 @@ export const CustomerVerify = async (req: Request, res: Response, next: NextFunc
           verified: updatedCustomer.verified
         })
 
+        res.cookie('token', `${signature}`);
+
         return res.status(201).json({ signature, email: updatedCustomer.email, verified: updatedCustomer.verified })
+      } else {
+        return res.status(400).json({ message: "Error with OTP validation" })
+
       }
     } catch (error) {
-      return res.status(400).json({ message: "Error with OTP validation" })
+      return res.status(400).json({ message: "Something went wrong" })
     }
 
-  }
 };
 
 export const RequestOtp = async (req: Request, res: Response, next: NextFunction) => {
@@ -154,13 +173,36 @@ export const RequestOtp = async (req: Request, res: Response, next: NextFunction
       return res.status(404).json({ message: "Profile not found" })
     }
 
-    const { otp, expiry } = GenerateOtpAndExpiry()
+    const { otp, expiry } = GenerateOtpAndExpiry(new Date())
 
     profile.otp = otp
     profile.otp_expiry = expiry
     await profile.save()
 
-    await onRequestOTP(otp, profile.phone)
+    try {
+      await onRequestOTP(otp, profile.phone)
+    } catch (error) {
+      // Execute onRequestOTPWithEmail if onRequestOTP fails
+      const emailResponse = onRequestOTPWithEmail(
+        profile.email,
+        "OTP Request",
+        otp
+      );
+
+      
+    }
+
+    
+      // try {
+
+      // } catch (emailError) {
+      //   // Handle errors from onRequestOTPWithEmail
+      //   console.error("Error sending email OTP:", emailError);
+  
+      //   // Provide a meaningful response to the client
+      //   return res.status(500).json({ error: "Failed to send OTPs" });
+      // }
+
 
     return res.status(201).json({ message: "OTP sent to your registred phone number" })
   } catch (error) {

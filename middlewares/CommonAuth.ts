@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { AuthPayload } from "../dto/Auth.dto";
-import { ValidateSignature } from "../utilities/PasswordUtility";
+import { validateSignature } from "../utilities/PasswordUtility";
 
 
 declare global {
@@ -12,7 +12,7 @@ declare global {
 }
 
 export const Authenticate = async (req: Request, res: Response, next: NextFunction) => {
-    const validate = await ValidateSignature(req)
+    const validate = await validateSignature(req)
     if(validate) {
         next()
     } else {
