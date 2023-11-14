@@ -1,0 +1,8 @@
+// export const MONGO_URI = 'mongodb://localhost:27017'
+export const MONGO_URI = 'mongodb+srv://lahdergham:lahdergham@cluster0.wq2mjny.mongodb.net/?retryWrites=true&w=majority'
+export const JWT_SECRET = 'sfsfh8HDSFHSD_çfdiuqhrue&w=majority'
+export const twilioAccountSID = 'AC758b0c86c71f6392ccae29a1c80714e5'
+export const twilioAuthToken = '761fa147721befffa81fb045d5449ce1'
+export const EMAIL = 'lah.dergham@gmail.com'
+export const EMAIL_PASSWD = 'qvcv czcx cleg fsfs'
+export const PORT = '5353'

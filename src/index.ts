@@ -1,14 +1,15 @@
 import express from "express";
 import App from './services/ExpressApp'
 import DBConnection from './services/Database'
+import { PORT } from "./config";
 
 const StartServer = async () => {
 
   const app = express()
   await DBConnection()
   await App(app)
-  app.listen(5353, () => {
-    console.log("Listening on port 5353");
+  app.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`);
     
   })
 }
