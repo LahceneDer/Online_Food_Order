@@ -60,3 +60,13 @@ export interface CustomerPayload {
     email: string;
     verified: boolean
 }
+
+export class OrderInputs {
+    _id: string;
+    unit: number;
+
+    constructor(_id: string, unit: number) {
+        this._id = _id;
+        this.unit = unit
+    }
+}

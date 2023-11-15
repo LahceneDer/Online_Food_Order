@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from "express"
-import { CustomerLogin, CustomerSignUp, CustomerVerify, GetCustomerProfile, RequestOtp, UpdateCustomerProfile } from "../controllers/CustomerController"
+import { CreateOrder, CustomerLogin, CustomerSignUp, CustomerVerify, GetCustomerProfile, GetOrderByID, GetOrders, RequestOtp, UpdateCustomerProfile } from "../controllers/CustomerController"
 import { Authenticate } from "../middlewares/CommonAuth"
 
 const router = express.Router()
@@ -27,6 +27,12 @@ router.get('/otp', RequestOtp)
 router.get('/profile',GetCustomerProfile)
 
 router.patch('/profile', UpdateCustomerProfile)
+
+// Order
+router.post('/orders',CreateOrder)
+router.get('/order/:id',GetOrderByID)
+router.get('/orders',GetOrders)
+
 
 
 

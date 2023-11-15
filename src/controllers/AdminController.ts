@@ -1,14 +1,18 @@
 import { NextFunction, Request, Response } from "express";
 import { CreateVandorInputs } from "../dto/vandor.dto";
 import { Vandor } from "../models/Vandor";
-import { GeneratePassword, GenerateSalt } from "../utilities/PasswordUtility";
+import { GeneratePassword, GenerateSalt, GenerateSignature } from "../utilities/PasswordUtility";
+import { Types, isValidObjectId } from "mongoose";
 
 export const FindVandor = async (id: string | undefined, email?: string) => {
     if (email) {
         const vandor = await Vandor.findOne({ email });
         return vandor;
     } else {
-        const vandor = await Vandor.findById(id);
+        
+        const vandor = await Vandor.findOne({ _id: id});
+        console.log(vandor);
+        
         return vandor;
     }
 };
@@ -56,7 +60,13 @@ export const CreateVandor = async (
             foods: []
         });
 
-        res.json({ createdVandor });
+            //generate the signature/token
+    const signature = GenerateSignature({
+        _id: createdVandor._id,
+        email: createdVandor.email,
+        verified: false
+      })
+        return res.cookie('token', `${signature}`).status(200).json({ createdVandor });
     } catch (error) {
         return res.status(500).json(error);
     }

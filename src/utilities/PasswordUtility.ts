@@ -31,6 +31,8 @@ export const validateSignature = async (req: Request): Promise<boolean> => {
 
     if (signature) {
       const payload = jwt.verify(signature, JWT_SECRET) as AuthPayload;
+      console.log(payload);
+      
       req.user = payload;
       return true;
     }

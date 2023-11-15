@@ -1,10 +1,12 @@
 import { plainToClass } from "class-transformer";
 import { validate } from 'class-validator'
 import { NextFunction, Request, Response } from "express";
-import { CreateCustomerInputs, EditCustomerProfileInputs, LoginCustomerInputs } from "../dto/Customer.dto";
+import { CreateCustomerInputs, EditCustomerProfileInputs, LoginCustomerInputs, OrderInputs } from "../dto/Customer.dto";
 import { GeneratePassword, GenerateSalt, GenerateSignature, ValidatePassword } from "../utilities/PasswordUtility";
 import { Customer, CustomerDoc } from "../models/Customer";
 import { GenerateOtpAndExpiry, onRequestOTP, onRequestOTPWithEmail } from "../utilities/NotificationUtility";
+import { Food } from "../models/Food";
+import { Order } from "../models/Order";
 
 
 
@@ -43,7 +45,8 @@ export const CustomerSignUp = async (req: Request, res: Response, next: NextFunc
     address: '',
     verified: false,
     lat: 0,
-    lng: 0
+    lng: 0,
+    orders: []
   })
 
   if (customer) {
@@ -264,4 +267,69 @@ export const UpdateCustomerProfile = async (req: Request, res: Response, next: N
 
 };
 
+
+export const CreateOrder = async (req: Request, res: Response, next: NextFunction) => {
+
+  // grap current login customer
+  const customer = req.user
+  if(!customer){
+    return res.status(403).json({ message: "Not authorized"})
+  }  
+  // create an order ID
+  try {
+    const profile = await Customer.findById(customer._id)
+  const orderId = `${Math.floor(Math.random() * 89999) + 1000}`
+
+  // Grab order items from request
+  const cart = req.body as [OrderInputs] // [ { id: xx, unit: xx } ]
+
+  let cartItems = Array()
+
+  let netAmount = 0.0
+
+  // Calculate order amount
+  const foods = await Food.find().where('_id').in(cart.map(item => item._id)).exec()
+
+  foods.map(food => {
+    cart.map(({ _id, unit}) => {
+      if(food._id === _id){
+        netAmount += (food.price + unit)
+        cartItems.push({ food, unit})
+      }
+    })
+  })
+
+  // Create Order with item descriptions
+  if(cartItems) {
+    const createdOrder = await Order.create({
+      orderID: orderId,
+      items: cartItems,
+      totalAmount: netAmount,
+      orderDate: new Date(),
+      paidThrough: 'COD',
+      paymentResponse: '',
+      orderStatus: "waiting"
+    })
+      // Finally update orders to user account
+    if(createdOrder) {
+      profile?.orders.push(createdOrder)
+
+      const updatedProfile = await profile?.save()
+      return res.status(200).json(updatedProfile)
+    }
+
+  }
+  } catch (error) {
+    return res.status(400).json({ message: "Error with create an order"})
+  }
+
+}
+
+export const GetOrders = async (req: Request, res: Response, next: NextFunction) => {
+
+}
+
+export const GetOrderByID = async (req: Request, res: Response, next: NextFunction) => {
+
+}
 
