@@ -13,7 +13,7 @@ export interface OrderDoc extends Document {
 const OrderSchema = new Schema({
     orderID: { type: String},
     items: [{
-        food: {type: Schema.Types.ObjectId, ref: "food", required: true},
+        food: {type: Schema.Types.ObjectId, ref: "Food", required: true},
         unit: {type: Number, required: true}
     }],
     totalAmount: { type: Number, required: true},

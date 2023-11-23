@@ -30,9 +30,7 @@ export const validateSignature = async (req: Request): Promise<boolean> => {
     const signature = req.cookies.token;
 
     if (signature) {
-      const payload = jwt.verify(signature, JWT_SECRET) as AuthPayload;
-      console.log(payload);
-      
+      const payload = jwt.verify(signature, JWT_SECRET) as AuthPayload;      
       req.user = payload;
       return true;
     }

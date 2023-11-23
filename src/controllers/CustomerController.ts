@@ -7,6 +7,7 @@ import { Customer, CustomerDoc } from "../models/Customer";
 import { GenerateOtpAndExpiry, onRequestOTP, onRequestOTPWithEmail } from "../utilities/NotificationUtility";
 import { Food } from "../models/Food";
 import { Order } from "../models/Order";
+import { Types } from "mongoose";
 
 
 
@@ -94,12 +95,12 @@ export const CustomerLogin = async (req: Request, res: Response, next: NextFunct
   try {
     const customer = await Customer.findOne({ email })
     if (!customer) {
-      return res.status(404).json({ message: "Password not valid" })
+      return res.status(404).json({ message: "Email not valid" })
     }
 
     const validate = await ValidatePassword(password, customer.password, customer.salt)
     if (!validate) {
-      return res.status(400).json({ message: "Login error !!!" })
+      return res.status(400).json({ message: "Password not valid" })
     }
     const signature = GenerateSignature({
       _id: customer._id,
@@ -272,12 +273,14 @@ export const CreateOrder = async (req: Request, res: Response, next: NextFunctio
 
   // grap current login customer
   const customer = req.user
+  
   if(!customer){
     return res.status(403).json({ message: "Not authorized"})
   }  
   // create an order ID
   try {
     const profile = await Customer.findById(customer._id)
+
   const orderId = `${Math.floor(Math.random() * 89999) + 1000}`
 
   // Grab order items from request
@@ -292,15 +295,19 @@ export const CreateOrder = async (req: Request, res: Response, next: NextFunctio
 
   foods.map(food => {
     cart.map(({ _id, unit}) => {
-      if(food._id === _id){
+      
+      if(String(food._id) == _id){
         netAmount += (food.price + unit)
         cartItems.push({ food, unit})
       }
     })
   })
 
+
+
   // Create Order with item descriptions
   if(cartItems) {
+
     const createdOrder = await Order.create({
       orderID: orderId,
       items: cartItems,
@@ -309,16 +316,18 @@ export const CreateOrder = async (req: Request, res: Response, next: NextFunctio
       paidThrough: 'COD',
       paymentResponse: '',
       orderStatus: "waiting"
-    })
+    })    
       // Finally update orders to user account
     if(createdOrder) {
       profile?.orders.push(createdOrder)
 
-      const updatedProfile = await profile?.save()
-      return res.status(200).json(updatedProfile)
-    }
+      await profile?.save()
+      
+      return res.status(200).json(createdOrder)
+    }    
 
   }
+
   } catch (error) {
     return res.status(400).json({ message: "Error with create an order"})
   }
@@ -327,9 +336,37 @@ export const CreateOrder = async (req: Request, res: Response, next: NextFunctio
 
 export const GetOrders = async (req: Request, res: Response, next: NextFunction) => {
 
+  const customer = req.user
+
+  if(!customer){
+    return res.status(403).json({ message: "Not authorized"})
+  }  
+
+  try {
+    const currentCustomer = await Customer.findById(customer._id).populate('customer')
+    
+    return res.status(200).json(currentCustomer?.orders)
+
+  } catch (error) {
+    return res.status(400).json({ message: "Error with fetching orders"})
+    
+  }
+
 }
 
 export const GetOrderByID = async (req: Request, res: Response, next: NextFunction) => {
 
+  const orderId = req.params.id  
+
+  if(orderId) {
+    try {
+      const order = await Order.findById(orderId).populate(`items.food`)
+      return res.status(200).json(order)
+
+    } catch (error) {
+    return res.status(400).json({ message: "Error with fetching orders"})
+      
+    }
+  }
 }
 
